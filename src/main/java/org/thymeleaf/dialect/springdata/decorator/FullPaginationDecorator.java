@@ -2,6 +2,8 @@ package org.thymeleaf.dialect.springdata.decorator;
 
 import java.util.Locale;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.dialect.springdata.Keys;
@@ -15,6 +17,8 @@ public final class FullPaginationDecorator implements PaginationDecorator {
     private static final String BUNDLE_NAME = FullPaginationDecorator.class.getSimpleName();
     private static final int DEFAULT_PAGE_SPLIT = 7;
 
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
+
     public String getIdentifier() {
         return "full";
     }
@@ -23,23 +27,48 @@ public final class FullPaginationDecorator implements PaginationDecorator {
 
         Page<?> page = PageUtils.findPage(context);
 
-        // laquo
-        String firstPage = PageUtils.createPageUrl(context, 0);
         Locale locale = context.getLocale();
-        String laquo = PageUtils.isFirstPage(page) ? getLaquo(locale) : getLaquo(firstPage, locale);
+        
 
-        // Previous page
+        // First page
+        String firstPage = PageUtils.createPageUrl(context, 0);
+
+        // Previos page
         String previous = getPreviousPageLink(page, context);
-
-        // Links
-        String pageLinks = createPageLinks(page, context);
 
         // Next page
         String next = getNextPageLink(page, context);
 
-        // raquo
+        // Last page
         String lastPage = PageUtils.createPageUrl(context, page.getTotalPages() - 1);
-        String raquo = page.isLast() ? getRaquo(locale) : getRaquo(lastPage, locale);
+
+        String onclickFunction = (String) context.getVariable(Keys.PAGINATION_ONCLICK_KEY);
+
+        String laquo;
+        String pageLinks;
+        String raquo;
+
+        if (onclickFunction != null ) {
+
+            // laquo
+            laquo = PageUtils.isFirstPage(page) ? getLaquo(locale) : getDynamicLaquo(onclickFunction + "(" + firstPage + ")", locale);
+
+            // Links
+            pageLinks = createPageLinks(page, context);
+
+            // raquo
+            raquo = page.isLast() ? getRaquo(locale) : getDynamicRaquo(onclickFunction + "(" + lastPage + ")", locale);
+        }
+        else {
+            // laquo
+            laquo = PageUtils.isFirstPage(page) ? getLaquo(locale) : getLaquo(firstPage, locale);
+            
+            // Links
+            pageLinks = createPageLinks(page, context);
+            
+            // raquo
+            raquo = page.isLast() ? getRaquo(locale) : getRaquo(lastPage, locale);
+        }
 
         boolean isUl = Strings.UL.equalsIgnoreCase(tag.getElementCompleteName());
         String currentClass = tag.getAttributeValue(Strings.CLASS);
@@ -58,6 +87,8 @@ public final class FullPaginationDecorator implements PaginationDecorator {
         if (paramValue != null) {
             pageSplit = (Integer) paramValue;
         }
+
+        String onclickFunction = (String) context.getVariable(Keys.PAGINATION_ONCLICK_KEY);
 
         int firstPage = 0;
         int latestPage = page.getTotalPages();
@@ -85,7 +116,13 @@ public final class FullPaginationDecorator implements PaginationDecorator {
             String link = PageUtils.createPageUrl(context, i);
             boolean isCurrentPage = i == currentPage;
             Locale locale = context.getLocale();
-            String li = isCurrentPage ? getLink(pageNumber, locale) : getLink(pageNumber, link, locale);
+            String li = new String();
+            if (onclickFunction == null) {
+                li = isCurrentPage ? getLink(pageNumber, locale) : getLink(pageNumber, link, locale);
+            }
+            else {
+                li = isCurrentPage ? getLink(pageNumber, locale) : getDynamicLink(pageNumber, PageUtils.createDynamicSearchCall(onclickFunction, link), locale);
+            }
             builder.append(li);
         }
 
@@ -100,6 +137,10 @@ public final class FullPaginationDecorator implements PaginationDecorator {
         return Messages.getMessage(BUNDLE_NAME, "laquo.link", locale, firstPage);
     }
 
+    private String getDynamicLaquo(String function, Locale locale) {
+        return Messages.getMessage(BUNDLE_NAME, "dynamic.laquo.link", locale, function);
+    }
+
     private String getRaquo(Locale locale) {
         return Messages.getMessage(BUNDLE_NAME, "raquo", locale);
     }
@@ -108,12 +149,20 @@ public final class FullPaginationDecorator implements PaginationDecorator {
         return Messages.getMessage(BUNDLE_NAME, "raquo.link", locale, lastPage);
     }
 
+    private String getDynamicRaquo(String function, Locale locale) {
+        return Messages.getMessage(BUNDLE_NAME, "dynamic.raquo.link", locale, function);
+    }
+
     private String getLink(int pageNumber, Locale locale) {
         return Messages.getMessage(BUNDLE_NAME, "link.active", locale, pageNumber);
     }
 
     private String getLink(int pageNumber, String url, Locale locale) {
         return Messages.getMessage(BUNDLE_NAME, "link", locale, url, pageNumber);
+    }
+
+    private String getDynamicLink(int pageNumber, String function, Locale locale) {
+        return Messages.getMessage(BUNDLE_NAME, "dynamic.link", locale, function, pageNumber);
     }
 
     private String getPreviousPageLink(Page<?> page, final ITemplateContext context) {

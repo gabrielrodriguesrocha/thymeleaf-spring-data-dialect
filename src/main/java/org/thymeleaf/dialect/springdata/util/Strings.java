@@ -15,6 +15,7 @@ public final class Strings {
     public static final String SIZE = "size";
     public static final String SORTED_PREFIX = "sorted-";
     public static final String SORT = "sort";
+    public static final String ONCLICK = "onclick";
 
     private Strings() {
     }

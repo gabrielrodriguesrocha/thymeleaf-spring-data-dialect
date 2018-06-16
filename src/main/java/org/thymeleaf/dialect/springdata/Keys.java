@@ -7,6 +7,7 @@ public final class Keys {
     public static final String PAGINATION_QUALIFIER_PREFIX = "_sd_.pagination.qualifier.prefix";
     public static final String PAGE_EXPRESSION = "${page}";
     public static final String PAGINATION_SPLIT_KEY = "_sd_.pagination.split";
+    public static final String PAGINATION_ONCLICK_KEY = "_sd_.pagination.onclick";
 
     private Keys() {
     }

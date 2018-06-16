@@ -131,6 +131,10 @@ public final class PageUtils {
         return buildUrl(baseUrl, context).append(SIZE).append(EQ).append(pageSize).toString();
     }
 
+    public static String createDynamicSearchCall(String function, String link) {
+        return (function + "('" + link + "')");
+    }
+
     public static int getFirstItemInPage(final Page<?> page) {
         return page.getSize() * page.getNumber() + 1;
     }
